@@ -1,0 +1,102 @@
+/**
+ * API Service — conecta el frontend con el backend del Reto 1/2
+ *
+ * BASE_URL: configura tu endpoint en .env.development
+ * REACT_APP_API_URL=http://localhost:3001
+ */
+
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+export interface Cliente {
+  id: number;
+  nombre: string;
+  email: string;
+  telefono?: string;
+  ciudad?: string;
+  createdAt?: string;
+}
+
+export interface Producto {
+  id: number;
+  nombre: string;
+  precio: number;
+  stock: number;
+  categoria?: string;
+  activo?: boolean;
+}
+
+export interface Pedido {
+  id: number;
+  clienteId: number;
+  estado: 'pendiente' | 'procesando' | 'enviado' | 'entregado' | 'cancelado';
+  total: number;
+  createdAt?: string;
+  cliente?: Cliente;
+}
+
+export interface NuevoCliente {
+  nombre: string;
+  email: string;
+  telefono?: string;
+  ciudad?: string;
+}
+
+export interface NuevoProducto {
+  nombre: string;
+  precio: number;
+  stock: number;
+  categoria?: string;
+}
+
+// ─── Helper fetch ─────────────────────────────────────────────────────────────
+
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || `Error ${res.status}`);
+  }
+  return res.json();
+}
+
+// ─── Clientes ─────────────────────────────────────────────────────────────────
+
+export const clientesApi = {
+  getAll: () => apiFetch<Cliente[]>('/clientes'),
+  getById: (id: number) => apiFetch<Cliente>(`/clientes/${id}`),
+  create: (data: NuevoCliente) =>
+    apiFetch<Cliente>('/clientes', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: Partial<NuevoCliente>) =>
+    apiFetch<Cliente>(`/clientes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: number) =>
+    apiFetch<void>(`/clientes/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Productos ────────────────────────────────────────────────────────────────
+
+export const productosApi = {
+  getAll: () => apiFetch<Producto[]>('/productos'),
+  getById: (id: number) => apiFetch<Producto>(`/productos/${id}`),
+  create: (data: NuevoProducto) =>
+    apiFetch<Producto>('/productos', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: Partial<NuevoProducto>) =>
+    apiFetch<Producto>(`/productos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: number) =>
+    apiFetch<void>(`/productos/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Pedidos ──────────────────────────────────────────────────────────────────
+
+export const pedidosApi = {
+  getAll: () => apiFetch<Pedido[]>('/pedidos'),
+  getByCliente: (clienteId: number) => apiFetch<Pedido[]>(`/pedidos?clienteId=${clienteId}`),
+};
+
+// ─── Health check ─────────────────────────────────────────────────────────────
+
+export const healthCheck = () => apiFetch<{ status: string }>('/health');
